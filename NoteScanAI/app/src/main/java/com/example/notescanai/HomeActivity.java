@@ -102,7 +102,7 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         // Initialize UsreIcon view
-        UsreIcon = findViewById(R.id.UsreIcon);
+        UsreIcon = findViewById(R.id.UserIcon);
 
         UsreIcon.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -146,7 +146,7 @@ public class HomeActivity extends AppCompatActivity {
         // Load notes from Firebase
         loadNotesFromFirebase();
 
-        ImageView imageView = findViewById(R.id.UsreIcon); // your ImageView
+        ImageView imageView = findViewById(R.id.UserIcon); // your ImageView
 
         SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
         String base64Str = prefs.getString("profileImage", null);
@@ -453,7 +453,7 @@ public class HomeActivity extends AppCompatActivity {
     // Contoh penggunaan di activity lain
     public void displaySavedImage() {
         // Misalnya di ProfileDisplayActivity
-        ImageView imageView = findViewById(R.id.UsreIcon);
+        ImageView imageView = findViewById(R.id.UserIcon);
 
         Bitmap savedBitmap = getImageFromSharedPreferences(this);
         if (savedBitmap != null) {
