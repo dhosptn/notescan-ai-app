@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "477603759785",
+    "project_id": "scannoteai",
+    "storage_bucket": "scannoteai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:477603759785:android:9ad231d33f66b45d954bb8",
+        "android_client_info": {
+          "package_name": "com.example.notescanai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzvMSCz7HHfu80BSjKEX_6aG4C03QxYnA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
