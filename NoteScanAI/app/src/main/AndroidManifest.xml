@@ -33,20 +33,15 @@
             android:theme="@style/Theme.PrintEase.NoActionBar"> <!-- Gunakan theme tanpa ActionBar -->
         </activity>
 
-        <!-- Aktivitas lain -->
         <activity android:name=".NoteDetailActivity"
             android:exported="true"
             android:theme="@style/Theme.PrintEase.NoActionBar" />
         <activity android:name=".NoteAdapter"
             android:exported="true"
             android:theme="@style/Theme.PrintEase.NoActionBar" />
-
         <activity android:name=".ProfileUploadActivity"
             android:exported="true"
             android:theme="@style/Theme.PrintEase.NoActionBar" />
-
-
-        <!-- Provider harus berada di dalam tag application -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.example.notescanai.fileprovider"

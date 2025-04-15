@@ -8,7 +8,7 @@
 
     <ImageView
         android:id="@+id/buttonback"
-        android:layout_width="46dp"
+        android:layout_width="30dp"
         android:layout_height="50dp"
         android:src="@drawable/ic_back"
         app:layout_constraintTop_toTopOf="parent"
@@ -32,8 +32,8 @@
 
     <ImageView
         android:id="@+id/profileImageView"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
         android:scaleType="centerCrop"
         android:background="@drawable/circular_background"
         android:src="@drawable/circle_user_solid"
@@ -58,30 +58,33 @@
         app:layout_constraintBottom_toBottomOf="@id/profileImageView"
         app:layout_constraintEnd_toEndOf="@id/profileImageView" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSaveProfile"
-        android:layout_width="0dp"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="Simpan Foto Profil"
+        android:text="Simpan Profil"
         android:textColor="#FFFFFF"
-        android:background="@drawable/rounded_button"
-        android:backgroundTint="@color/wine_opacity13"
+        android:fontFamily="@font/poppins_semibold"
+        app:cornerRadius="15dp"
+        app:backgroundTint="#2ECC71"
         app:layout_constraintTop_toBottomOf="@id/profileImageView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnResetProfile"
-        android:layout_width="0dp"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Hapus Foto Profil"
+        android:text="Hapus Profil"
         android:textColor="#FFFFFF"
-        android:background="@drawable/rounded_button"
-        android:backgroundTint="@color/wine_opacity13"
+        android:fontFamily="@font/poppins_semibold"
+        app:cornerRadius="15dp"
+        app:backgroundTint="#E74C3C"
         app:layout_constraintTop_toBottomOf="@id/btnSaveProfile"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
