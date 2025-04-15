@@ -20,7 +20,7 @@
 | Teknologi         | Deskripsi                                     |
 | ----------------- | --------------------------------------------- |
 | Android Studio    | IDE utama untuk pengembangan aplikasi Android |
-| Java / Kotlin     | Bahasa pemrograman utama                      |
+| Java      | Bahasa pemrograman utama                      |
 | ML Kit (Firebase) | Library OCR dari Google untuk pengenalan teks |
 | CameraX           | Library modern Android untuk akses kamera     |
 | XML               | Untuk desain UI                               |
@@ -60,10 +60,10 @@
 
 | Nama Anggota | NIM        | Peran                 |
 | ------------ | ---------- | --------------------- |
-| Nama 1       | 20xxxxxxxx | UI/UX & Layout        |
-| Nama 2       | 20xxxxxxxx | Integrasi OCR         |
-| Nama 3       | 20xxxxxxxx | Kamera & ML Kit       |
-| Nama 4       | 20xxxxxxxx | Dokumentasi & Testing |
+| Muhammad Faiz Iqbal       | 312310491 | UI/UX & Layout        |
+| Ahmad Ridho Septian       | 312310447 | Machine Learning Develepor         |
+| Raditra Ikhwanul Arifin       | 312310487 | UI/UX & Module Contributor       |
+| Muhammmad Nurul Firdaus       | 312310495 | Problem Solver |
 
 ---
 
