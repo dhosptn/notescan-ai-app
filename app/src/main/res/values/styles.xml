@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.PrintEase.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent_color</item>
+        <item name="colorPrimaryDark">@color/accent_color</item>
+        <item name="colorAccent">@color/accent_color</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/note_background</item>
+    </style>
+    <style name="ToolbarTitleStyle" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
+        <item name="android:textColor">#FFFFFF</item> <!-- Atur sesuai kebutuhan -->
+        <item name="android:textSize">20sp</item>     <!-- Ukuran teks -->
+        <item name="android:fontFamily">@font/poppins_regular</item> <!-- Ganti dengan font yang kamu punya -->
+    </style>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">NoteScan AI</string>
+    <string name="note_hint">Tulis catatan Anda di sini...</string>
+</resources>
