@@ -77,6 +77,7 @@ public class HomeActivity extends AppCompatActivity {
     private Uri photoURI;
     private String currentPhotoPath;
 
+
     // Firebase
     private DatabaseReference notesRef;
 
@@ -97,7 +98,7 @@ public class HomeActivity extends AppCompatActivity {
         searchEditText = findViewById(R.id.searchEditText);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
         cameraFab = findViewById(R.id.cameraFab);
-        deleteButton = findViewById(R.id.btn_delete);
+        deleteButton = findViewById(R.id.deleteButton);
 
         // Sembunyikan deleteButton di awal
         deleteButton.setVisibility(View.GONE);
