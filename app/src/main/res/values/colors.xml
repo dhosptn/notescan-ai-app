@@ -9,6 +9,7 @@
     <color name="white">#FFFFFFFF</color>
     <color name="gray_text">#757575</color>
     <color name="white_smoke">#F7F4F3</color>
+    <color name="background_light">#F5F5F5</color>
     <color name="wine">#5B2333</color>
     <color name="wine_opacity13">#D5AC989C</color>
     <color name="grey">#BDBDBD</color>

@@ -19,6 +19,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -29,7 +30,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -64,6 +64,7 @@ public class HomeActivity extends AppCompatActivity {
     private static final int REQUEST_CAMERA_PERMISSION = 100;
     private static final int REQUEST_STORAGE_PERMISSION = 101;
     private static final int REQUEST_IMAGE_CAPTURE = 102;
+    private static final int REQUEST_PICK_IMAGE = 103;
 
     private EditText searchEditText;
     private RecyclerView notesRecyclerView;
@@ -96,7 +97,7 @@ public class HomeActivity extends AppCompatActivity {
         searchEditText = findViewById(R.id.searchEditText);
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
         cameraFab = findViewById(R.id.cameraFab);
-        deleteButton = findViewById(R.id.btn_delete); // Tambahkan ini
+        deleteButton = findViewById(R.id.btn_delete);
 
         // Sembunyikan deleteButton di awal
         deleteButton.setVisibility(View.GONE);
@@ -144,7 +145,7 @@ public class HomeActivity extends AppCompatActivity {
         cameraFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                checkPermissionsAndOpenCamera();
+                showImageSourceDialog();
             }
         });
 
@@ -162,7 +163,6 @@ public class HomeActivity extends AppCompatActivity {
         if (base64Str != null) {
             Bitmap bitmap = ProfilePreferencesManajer.base64ToBitmap(base64Str);
 
-
             // Load image from drawable
             Glide.with(this)
                     .load(bitmap)
@@ -174,6 +174,46 @@ public class HomeActivity extends AppCompatActivity {
             // If no image is saved, show default
             imageView.setImageResource(R.drawable.circle_user_solid);
         }
+    }
+
+    // Method to show dialog for choosing image source
+    private void showImageSourceDialog() {
+        final CharSequence[] options = {"Take Photo", "Choose from Gallery", "Cancel"};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Add Photo");
+
+        builder.setItems(options, (dialog, item) -> {
+            if (options[item].equals("Take Photo")) {
+                checkPermissionsAndOpenCamera();
+            } else if (options[item].equals("Choose from Gallery")) {
+                checkPermissionsAndOpenGallery();
+            } else if (options[item].equals("Cancel")) {
+                dialog.dismiss();
+            }
+        });
+        builder.show();
+    }
+
+    // Method to check permissions and open gallery
+    private void checkPermissionsAndOpenGallery() {
+        // Check for storage permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    REQUEST_STORAGE_PERMISSION);
+            return;
+        }
+
+        // Open gallery
+        openGallery();
+    }
+
+    // Method to open gallery
+    private void openGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, REQUEST_PICK_IMAGE);
     }
 
     // Metode untuk mendapatkan ID perangkat unik dari SharedPreferences atau membuat yang baru
@@ -218,13 +258,6 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    public class MainActivity extends AppCompatActivity {
-        @Override
-        protected void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            setContentView(R.layout.activity_home);
-        }
-    }
     // Fungsi untuk menghapus catatan yang dipilih
     private void deleteSelectedNotes() {
         List<Note> selectedNotes = noteAdapter.getSelectedNotes(); // Dapatkan catatan yang dipilih
@@ -237,7 +270,6 @@ public class HomeActivity extends AppCompatActivity {
         Toast.makeText(this, "Selected notes deleted", Toast.LENGTH_SHORT).show();
         deleteButton.setVisibility(View.GONE); // Sembunyikan tombol delete setelah menghapus
     }
-
 
     private void loadNotesFromFirebase() {
         // Order by timestamp in descending order (newest first)
@@ -387,11 +419,23 @@ public class HomeActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CAMERA_PERMISSION || requestCode == REQUEST_STORAGE_PERMISSION) {
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 checkPermissionsAndOpenCamera(); // Check if all permissions are granted now
             } else {
-                Toast.makeText(this, "Permission is required to use this feature",
+                Toast.makeText(this, "Camera permission is required to take photos",
+                        Toast.LENGTH_SHORT).show();
+            }
+        } else if (requestCode == REQUEST_STORAGE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Check if this was for camera or gallery
+                if (permissions[0].equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    checkPermissionsAndOpenCamera(); // For camera flow
+                } else if (permissions[0].equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                    openGallery(); // For gallery flow
+                }
+            } else {
+                Toast.makeText(this, "Storage permission is required to access images",
                         Toast.LENGTH_SHORT).show();
             }
         }
@@ -400,64 +444,51 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            Toast.makeText(this, "Processing image...", Toast.LENGTH_SHORT).show();
 
-            // Process the full-resolution image from the file URI
-            try {
-                InputImage image = InputImage.fromFilePath(this, photoURI);
-                processImageForTextRecognition(image);
-            } catch (IOException e) {
-                Toast.makeText(this, "Error reading image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        if (resultCode == RESULT_OK) {
+            if (requestCode == REQUEST_IMAGE_CAPTURE) {
+                Toast.makeText(this, "Processing image from camera...", Toast.LENGTH_SHORT).show();
+
+                try {
+                    InputImage image = InputImage.fromFilePath(this, photoURI);
+                    processImageForTextRecognition(image);
+                } catch (IOException e) {
+                    Toast.makeText(this, "Error reading image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            } else if (requestCode == REQUEST_PICK_IMAGE && data != null) {
+                Toast.makeText(this, "Processing image from gallery...", Toast.LENGTH_SHORT).show();
+
+                try {
+                    Uri selectedImageUri = data.getData();
+                    InputImage image = InputImage.fromFilePath(this, selectedImageUri);
+                    processImageForTextRecognition(image);
+                } catch (IOException e) {
+                    Toast.makeText(this, "Error reading gallery image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }
 
     private void processImageForTextRecognition(InputImage image) {
-        // Menggabungkan hasil dari semua recognizer
-        final StringBuilder allRecognizedText = new StringBuilder();
-        final int[] completedRecognizers = {0};
-        final int totalRecognizers = textRecognizers.size();
+        // Pakai satu recognizer default (bahasa Inggris/Indonesia tergantung sistem)
+        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
 
-        for (Map.Entry<String, TextRecognizer> entry : textRecognizers.entrySet()) {
-            final String languageKey = entry.getKey();
-            TextRecognizer recognizer = entry.getValue();
+        recognizer.process(image)
+                .addOnSuccessListener(text -> {
+                    String recognizedText = text.getText();
 
-            recognizer.process(image)
-                    .addOnSuccessListener(new OnSuccessListener<Text>() {
-                        @Override
-                        public void onSuccess(Text text) {
-                            String recognizedText = text.getText();
-                            if (!recognizedText.isEmpty()) {
-                                if (allRecognizedText.length() > 0) {
-                                    allRecognizedText.append("\n\n");
-                                }
-                                allRecognizedText.append(recognizedText);
-                            }
-
-                            completedRecognizers[0]++;
-
-                            // Jika semua recognizer telah selesai
-                            if (completedRecognizers[0] >= totalRecognizers) {
-                                finishTextRecognition(allRecognizedText.toString());
-                            }
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Log.e("TextRecognition", "Failed to recognize " + languageKey + " text: " + e.getMessage());
-
-                            completedRecognizers[0]++;
-
-                            // Tetap lanjutkan meskipun gagal untuk bahasa ini
-                            if (completedRecognizers[0] >= totalRecognizers) {
-                                finishTextRecognition(allRecognizedText.toString());
-                            }
-                        }
-                    });
-        }
+                    if (!recognizedText.isEmpty()) {
+                        finishTextRecognition(recognizedText);
+                    } else {
+                        Toast.makeText(this, "No text detected in the image.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("TextRecognition", "Failed to recognize text: " + e.getMessage());
+                    Toast.makeText(this, "Failed to recognize text.", Toast.LENGTH_SHORT).show();
+                });
     }
+
 
     private void finishTextRecognition(String recognizedText) {
         if (!recognizedText.isEmpty()) {
@@ -518,20 +549,6 @@ public class HomeActivity extends AppCompatActivity {
         }
 
         return null;
-    }
-
-    // Contoh penggunaan di activity lain
-    public void displaySavedImage() {
-        // Misalnya di ProfileDisplayActivity
-        ImageView imageView = findViewById(R.id.UsreIcon);
-
-        Bitmap savedBitmap = getImageFromSharedPreferences(this);
-        if (savedBitmap != null) {
-            imageView.setImageBitmap(savedBitmap);
-        } else {
-            // Tampilkan gambar default jika tidak ada gambar tersimpan
-            imageView.setImageResource(R.drawable.pprotfile);
-        }
     }
 
     private void openNoteDetailActivity(Note note) {

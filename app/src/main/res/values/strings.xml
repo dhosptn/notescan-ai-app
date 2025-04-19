@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">NoteScan AI</string>
     <string name="note_hint">Tulis catatan Anda di sini...</string>
+    <string name="image_source_title">Add Photo</string>
+    <string name="camera_option">Take Photo</string>
+    <string name="gallery_option">Choose from Gallery</string>
+    <string name="cancel_option">Cancel</string>
 </resources>

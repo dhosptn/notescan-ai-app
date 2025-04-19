@@ -2,87 +2,100 @@ package com.example.notescanai;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-
 import com.bumptech.glide.Glide;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.IOException;
-
 
 public class ProfileUploadActivity extends AppCompatActivity {
 
     private static final int PICK_IMAGE_REQUEST = 1;
 
-    private ImageView profileImageView, buttonback1;
-    private Button btnSaveProfile, btnResetProfile;
-
+    // View elements
+    private ImageView profileImageView, buttonBack;
+    private TextView tvUserNameLabel, tvAppVersion;
+    private MaterialButton btnSaveProfile, btnResetProfile;
     private FloatingActionButton btnUploadPhoto;
 
+    // Data variables
     private Uri selectedImageUri;
-    private int selectedAvatarResourceId = -1;
+    private SharedPreferences prefs;
 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile_upload);
 
-        // Inisialisasi view dan listener saja tanpa preferences manager
+        // Initialize SharedPreferences
+        prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
+
+        // Initialize views
         profileImageView = findViewById(R.id.profileImageView);
+        buttonBack = findViewById(R.id.buttonBack);
+        tvUserNameLabel = findViewById(R.id.tvUserNameLabel);
+        tvAppVersion = findViewById(R.id.tvAppVersion);
         btnUploadPhoto = findViewById(R.id.btnUploadPhoto);
         btnSaveProfile = findViewById(R.id.btnSaveProfile);
         btnResetProfile = findViewById(R.id.btnResetProfile);
-        buttonback1 = findViewById(R.id.buttonback);
 
-        // Setup listeners langsung di sini
+        // Set app version
+        try {
+            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            String version = pInfo.versionName;
+            tvAppVersion.setText("Versi " + version);
+        } catch (PackageManager.NameNotFoundException e) {
+            tvAppVersion.setText("Versi 1.0.0");
+        }
+
+        // Set up listeners
+        buttonBack.setOnClickListener(v -> navigateToHome());
         btnUploadPhoto.setOnClickListener(v -> openImageChooser());
         btnSaveProfile.setOnClickListener(v -> saveProfileImage());
         btnResetProfile.setOnClickListener(v -> resetProfileImage());
-        buttonback1.setOnClickListener(v -> kembaliKehome());
 
-        // Setup avatar recycler view
-        setupAvatarRecyclerView();
+        // Load profile image
+        loadProfileImage();
+    }
 
-        ImageView imageView = findViewById(R.id.profileImageView); // your ImageView
-
-        SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
+    private void loadProfileImage() {
         String base64Str = prefs.getString("profileImage", null);
 
         if (base64Str != null) {
             Bitmap bitmap = ProfilePreferencesManajer.base64ToBitmap(base64Str);
 
-
-            // Load image from drawable
+            // Load image with Glide
             Glide.with(this)
                     .load(bitmap)
-                    .circleCrop() // makes it rounded
-                    .into(imageView);
+                    .circleCrop()
+                    .into(profileImageView);
 
-            imageView.setImageBitmap(bitmap);
+            // Set username if available
+            String username = prefs.getString("userName", "NoteScan User");
+            tvUserNameLabel.setText(username);
         } else {
             // If no image is saved, show default
-            imageView.setImageResource(R.drawable.circle_user_solid);
+            Glide.with(this)
+                    .load(R.drawable.circle_user_solid)
+                    .circleCrop()
+                    .into(profileImageView);
         }
     }
-
-    private void setupAvatarRecyclerView() {
-            if (selectedImageUri != null || selectedAvatarResourceId != -1) {
-                // Untuk sementara hanya tampilkan toast
-                Toast.makeText(this, "Foto profil berhasil disimpan", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Pilih foto profil terlebih dahulu", Toast.LENGTH_SHORT).show();
-            }
-        }
-
 
     private void openImageChooser() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -96,9 +109,12 @@ public class ProfileUploadActivity extends AppCompatActivity {
             selectedImageUri = data.getData();
             try {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedImageUri);
-                profileImageView.setImageBitmap(bitmap);
-                selectedAvatarResourceId = -1;
 
+                // Display selected image
+                Glide.with(this)
+                        .load(bitmap)
+                        .circleCrop()
+                        .into(profileImageView);
             } catch (IOException e) {
                 e.printStackTrace();
                 Toast.makeText(this, "Gagal memuat gambar", Toast.LENGTH_SHORT).show();
@@ -106,59 +122,49 @@ public class ProfileUploadActivity extends AppCompatActivity {
         }
     }
 
-    private void onAvatarSelected(int avatarResourceId) {
-        profileImageView.setImageResource(avatarResourceId);
-        selectedAvatarResourceId = avatarResourceId;
-        selectedImageUri = null;
-    }
-
     private void saveProfileImage() {
-        if (selectedImageUri != null || selectedAvatarResourceId != -1) {
-            // Simpan foto profil, misalnya ke SharedPreferences
+        // Save profile image
+        profileImageView.setDrawingCacheEnabled(true);
+        profileImageView.buildDrawingCache();
 
-            ImageView imageView = findViewById(R.id.profileImageView);
+        // Get Bitmap
+        Bitmap bitmap = Bitmap.createBitmap(profileImageView.getDrawingCache());
 
-            // Enable drawing cache
-            imageView.setDrawingCacheEnabled(true);
-            imageView.buildDrawingCache();
+        // Turn off drawing cache
+        profileImageView.setDrawingCacheEnabled(false);
 
-            // Get Bitmap
-            Bitmap bitmap = Bitmap.createBitmap(imageView.getDrawingCache());
+        // Convert to Base64
+        String base64Image = ProfilePreferencesManajer.bitmapToBase64(bitmap);
 
-            // Turn off drawing cache
-            imageView.setDrawingCacheEnabled(false);
+        // Save to SharedPreferences
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("profileImage", base64Image);
+        editor.putString("userName", tvUserNameLabel.getText().toString());
+        editor.apply();
 
-            // Convert to Base64
-            String base64Image = ProfilePreferencesManajer.bitmapToBase64(bitmap);
-
-            // Save to SharedPreferences
-            SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putString("profileImage", base64Image);
-            editor.apply();
-
-            Toast.makeText(this, "Foto profil berhasil disimpan", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Pilih foto profil terlebih dahulu", Toast.LENGTH_SHORT).show();
-        }
+        Toast.makeText(this, "Profil berhasil disimpan", Toast.LENGTH_SHORT).show();
     }
 
     private void resetProfileImage() {
-        SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
+        // Remove profile image
         prefs.edit().remove("profileImage").apply();
-        Toast.makeText(this, "foto berhasil di hapus", Toast.LENGTH_SHORT).show();
-        ImageView imageView = findViewById(R.id.profileImageView); // your ImageView
-        // Load image from drawable
+
+        // Reset image to default
         Glide.with(this)
                 .load(R.drawable.circle_user_solid)
-                .circleCrop() // makes it rounded
-                .into(imageView);
+                .circleCrop()
+                .into(profileImageView);
+
+        // Reset username
+        tvUserNameLabel.setText("NoteScan User");
+        prefs.edit().putString("userName", "NoteScan User").apply();
+
+        Toast.makeText(this, "Foto profil berhasil dihapus", Toast.LENGTH_SHORT).show();
     }
 
-    private void kembaliKehome() {
+    private void navigateToHome() {
         Intent intent = new Intent(this, HomeActivity.class);
         startActivity(intent);
         finish();
     }
-
 }

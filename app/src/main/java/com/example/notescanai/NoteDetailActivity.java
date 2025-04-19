@@ -5,9 +5,18 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.graphics.pdf.PdfDocument;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.Editable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextWatcher;
+import android.text.method.ScrollingMovementMethod;
+import android.text.style.LineHeightSpan;
+import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
@@ -29,6 +38,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NoteDetailActivity extends AppCompatActivity {
 
@@ -40,6 +51,7 @@ public class NoteDetailActivity extends AppCompatActivity {
     private String noteId;
     private DatabaseReference noteRef;
     private Note currentNote;
+    private boolean isInitialTextSet = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +70,9 @@ public class NoteDetailActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("Note Detail");
         }
 
+        // Improve text view readability
+        setupTextView();
+
         // Get note ID from intent
         noteId = getIntent().getStringExtra("NOTE_ID");
 
@@ -74,6 +89,106 @@ public class NoteDetailActivity extends AppCompatActivity {
             finish();
         }
     }
+
+    private void setupTextView() {
+        // Set proper text size
+        fullTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+
+        // Add padding for better readability
+        int padding = dpToPx(16);
+        fullTextView.setPadding(padding, padding, padding, padding);
+
+        // Enable scrolling for long texts
+        fullTextView.setVerticalScrollBarEnabled(true);
+        fullTextView.setMovementMethod(ScrollingMovementMethod.getInstance());
+
+        // Set line spacing
+        fullTextView.setLineSpacing(dpToPx(4), 1.2f);
+
+        // Add text change listener to auto-format text
+        fullTextView.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Not needed
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Not needed
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // Skip formatting during initial text setting to avoid infinite loop
+                if (!isInitialTextSet) return;
+
+                // Simple formatting could be added here if needed
+                // For example, removing excessive blank lines
+                removeExcessiveBlankLines(s);
+            }
+        });
+    }
+
+    // Convert dp to pixels
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
+    // Remove more than 2 consecutive blank lines
+    private void removeExcessiveBlankLines(Editable s) {
+        String text = s.toString();
+        String pattern = "\n{3,}"; // 3 or more newlines
+        Pattern r = Pattern.compile(pattern);
+        Matcher m = r.matcher(text);
+
+        // Don't modify during initial text processing
+        if (!isInitialTextSet) return;
+
+        // Replace excessive newlines with just two
+        if (m.find()) {
+            isInitialTextSet = false; // Prevent recursion
+            String newText = text.replaceAll(pattern, "\n\n");
+            s.replace(0, text.length(), newText);
+            isInitialTextSet = true;
+        }
+    }
+
+    // Format recognized text for better readability
+    private String formatRecognizedText(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+
+        // Normalize line breaks
+        text = text.replaceAll("\r\n", "\n");
+
+        // Remove excessive spaces
+        text = text.replaceAll(" {2,}", " ");
+
+        // Ensure proper paragraph breaks (replace single newlines with space, keep double newlines)
+        text = text.replaceAll("(?<!\n)\n(?!\n)", " ");
+
+        // Fix spacing after period, question mark, or exclamation mark followed by lowercase
+        text = text.replaceAll("([.!?])\\s*([a-z])", "$1 $2");
+
+        // Remove excessive blank lines (more than 2)
+        text = text.replaceAll("\n{3,}", "\n\n");
+
+        // Ensure capital letter after period at end of sentence
+        Pattern pattern = Pattern.compile("([.!?])\\s+([a-z])");
+        Matcher matcher = pattern.matcher(text);
+        StringBuffer result = new StringBuffer();
+
+        while (matcher.find()) {
+            matcher.appendReplacement(result, matcher.group(1) + " " + matcher.group(2).toUpperCase());
+        }
+        matcher.appendTail(result);
+        text = result.toString();
+
+        return text;
+    }
+
 
     // Method renamed to avoid conflict with ContextWrapper's getDeviceId()
     private String getUniqueDeviceId() {
@@ -93,8 +208,19 @@ public class NoteDetailActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 currentNote = dataSnapshot.getValue(Note.class);
                 if (currentNote != null) {
-                    // Display the note data
-                    fullTextView.setText(currentNote.getText());
+                    // First format the text for better readability
+                    String formattedText = formatRecognizedText(currentNote.getText());
+
+                    // Set initial formatting flag to false to avoid triggering text watcher
+                    isInitialTextSet = false;
+
+                    // Display the formatted note data
+                    fullTextView.setText(formattedText);
+
+                    // Now allow the text watcher to work
+                    isInitialTextSet = true;
+
+                    // Update date display
                     dateTextView.setText(dateFormat.format(new Date(currentNote.getTimestamp())));
                 } else {
                     Toast.makeText(NoteDetailActivity.this, "Note not found", Toast.LENGTH_SHORT).show();
@@ -118,7 +244,7 @@ public class NoteDetailActivity extends AppCompatActivity {
 
     private void saveNoteChanges() {
         String updatedText = fullTextView.getText().toString().trim();
-        if (!updatedText.isEmpty() && currentNote != null) {
+        if (currentNote != null && !updatedText.equals(currentNote.getText())) {
             noteRef.child("text").setValue(updatedText)
                     .addOnSuccessListener(aVoid -> {
                         // Note saved successfully
@@ -189,41 +315,87 @@ public class NoteDetailActivity extends AppCompatActivity {
 
         // Objek paint untuk menggambar teks
         Paint paint = new Paint();
+        paint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
         paint.setTextSize(12); // Ukuran font standar di Word
+
+        // Paint untuk judul
+        Paint titlePaint = new Paint();
+        titlePaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        titlePaint.setTextSize(16);
 
         // Margin kiri & atas
         int marginLeft = 55;
-        int marginTop = 85;
+        int marginTop = 50;
+
+        // Tambahkan judul (tanggal)
+        String title = dateFormat.format(new Date(currentNote.getTimestamp()));
+        canvas.drawText(title, marginLeft, marginTop, titlePaint);
+
+        // Tambahkan garis pembatas
+        Paint linePaint = new Paint();
+        linePaint.setColor(0xFF000000);
+        linePaint.setStrokeWidth(1);
+        canvas.drawLine(marginLeft, marginTop + 10, pageWidth - marginLeft, marginTop + 10, linePaint);
+
+        // Update posisi y untuk konten
+        int y = marginTop + 40;
 
         // Lebar area teks (agar tidak mepet ke tepi)
         int textWidth = pageWidth - 2 * marginLeft;
 
         // Menulis teks dengan line wrapping
-        String[] lines = textContent.split("\n");
-        int y = marginTop;
-        int lineSpacing = 16; // Jarak antar baris seperti di Word
+        String[] paragraphs = textContent.split("\n\n");
+        int lineSpacing = 18; // Jarak antar baris seperti di Word
 
-        for (String line : lines) {
-            // Potong teks panjang agar tidak melebihi lebar kertas
-            int charPerLine = 80; // Estimasi jumlah karakter per baris
-            int startIdx = 0;
+        for (String paragraph : paragraphs) {
+            // Tambahkan indentasi untuk paragraf
+            boolean firstLine = true;
 
-            while (startIdx < line.length()) {
-                int endIdx = Math.min(startIdx + charPerLine, line.length());
-                String subLine = line.substring(startIdx, endIdx);
-                canvas.drawText(subLine, marginLeft, y, paint);
-                y += lineSpacing; // Jarak antar baris
-                startIdx = endIdx;
+            // Bagi paragraf menjadi baris berdasarkan lebar
+            String[] words = paragraph.trim().split("\\s+");
+            StringBuilder line = new StringBuilder();
 
-                // Cek apakah sudah penuh halaman
-                if (y > pageHeight - marginTop) {
-                    document.finishPage(page);
-                    page = document.startPage(pageInfo);
-                    canvas = page.getCanvas();
-                    y = marginTop;
+            for (String word : words) {
+                if (paint.measureText(line + " " + word) < textWidth - (firstLine ? 20 : 0)) {
+                    if (line.length() > 0) line.append(" ");
+                    line.append(word);
+                } else {
+                    // Tulis baris sekarang
+                    int indent = firstLine ? 20 : 0; // Indentasi hanya untuk baris pertama
+                    canvas.drawText(line.toString(), marginLeft + indent, y, paint);
+                    y += lineSpacing;
+                    firstLine = false;
+
+                    // Reset untuk baris baru
+                    line = new StringBuilder(word);
+
+                    // Cek jika halaman penuh
+                    if (y > pageHeight - marginTop) {
+                        document.finishPage(page);
+                        page = document.startPage(pageInfo);
+                        canvas = page.getCanvas();
+                        y = marginTop;
+                    }
                 }
             }
-            y += lineSpacing / 2; // Jarak antar paragraf
+
+            // Tulis sisa teks di baris terakhir
+            if (line.length() > 0) {
+                int indent = firstLine ? 20 : 0;
+                canvas.drawText(line.toString(), marginLeft + indent, y, paint);
+                y += lineSpacing;
+            }
+
+            // Tambahkan jarak antar paragraf
+            y += lineSpacing / 2;
+
+            // Cek jika halaman penuh
+            if (y > pageHeight - marginTop) {
+                document.finishPage(page);
+                page = document.startPage(pageInfo);
+                canvas = page.getCanvas();
+                y = marginTop;
+            }
         }
 
         // Finish the page
