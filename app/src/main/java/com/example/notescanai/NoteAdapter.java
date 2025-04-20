@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -54,11 +55,13 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         String formattedDate = dateFormat.format(new Date(note.getTimestamp()));
         holder.dateText.setText(formattedDate);
 
-        // Atur warna sesuai status seleksi
+        // Atur warna dan ikon seleksi
         if (selectedItems.contains(position)) {
-            holder.noteCard.setCardBackgroundColor(Color.parseColor("#2D1119")); // Warna lebih gelap saat dipilih
+            holder.noteCard.setCardBackgroundColor(Color.parseColor("#2D1119"));
+            holder.selectedIndicator.setImageResource(R.drawable.ic_check_circle);
         } else {
-            holder.noteCard.setCardBackgroundColor(Color.parseColor("#5B2333")); // Warna normal
+            holder.noteCard.setCardBackgroundColor(Color.parseColor("#5B2333"));
+            holder.selectedIndicator.setImageResource(R.drawable.ic_circle_outline);
         }
 
         // Klik lama untuk masuk mode seleksi
@@ -81,10 +84,12 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             if (isSelectionMode) {
                 if (selectedItems.contains(position)) {
                     selectedItems.remove(position);
-                    holder.noteCard.setCardBackgroundColor(Color.parseColor("#5B2333")); // Kembali ke warna normal
+                    holder.noteCard.setCardBackgroundColor(Color.parseColor("#5B2333"));
+                    holder.selectedIndicator.setImageResource(R.drawable.ic_circle_outline);
                 } else {
                     selectedItems.add(position);
-                    holder.noteCard.setCardBackgroundColor(Color.parseColor("#2D1119")); // Warna dipilih lebih gelap
+                    holder.noteCard.setCardBackgroundColor(Color.parseColor("#2D1119"));
+                    holder.selectedIndicator.setImageResource(R.drawable.ic_check_circle);
                 }
 
                 if (selectedItems.isEmpty()) {
@@ -101,7 +106,6 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             }
         });
     }
-
 
     @Override
     public int getItemCount() {
@@ -134,12 +138,14 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         CardView noteCard;
         TextView textPreview;
         TextView dateText;
+        ImageView selectedIndicator; // Tambahan indikator
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
             noteCard = itemView.findViewById(R.id.noteCard);
             textPreview = itemView.findViewById(R.id.textPreview);
             dateText = itemView.findViewById(R.id.dateText);
+            selectedIndicator = itemView.findViewById(R.id.selectedIndicator);
         }
     }
 
