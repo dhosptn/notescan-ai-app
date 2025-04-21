@@ -47,6 +47,8 @@ import com.google.mlkit.vision.text.devanagari.DevanagariTextRecognizerOptions;
 import com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
+
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -93,6 +95,8 @@ public class HomeActivity extends AppCompatActivity {
 
         // Initialize multiple TextRecognizers for different languages
         initializeTextRecognizers();
+
+
 
         // Initialize views
         searchEditText = findViewById(R.id.searchEditText);
@@ -234,8 +238,9 @@ public class HomeActivity extends AppCompatActivity {
     private void initializeTextRecognizers() {
         textRecognizers = new HashMap<>();
 
-        // Latin text recognizer (English, Spanish, French, German, etc.)
-        textRecognizers.put("latin", TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS));
+        // Latin text recognizer with enhanced options
+        TextRecognizerOptions latinOptions = TextRecognizerOptions.DEFAULT_OPTIONS;
+        textRecognizers.put("latin", TextRecognition.getClient(latinOptions));
 
         // Chinese text recognizer
         textRecognizers.put("chinese", TextRecognition.getClient(new ChineseTextRecognizerOptions.Builder().build()));
@@ -471,24 +476,94 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void processImageForTextRecognition(InputImage image) {
-        // Pakai satu recognizer default (bahasa Inggris/Indonesia tergantung sistem)
-        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        Toast.makeText(this, "Analyzing text in image...", Toast.LENGTH_SHORT).show();
 
-        recognizer.process(image)
+        // Step 1: Try with the default recognizer first (optimized for Latin scripts)
+        TextRecognizer defaultRecognizer = textRecognizers.get("latin");
+
+        defaultRecognizer.process(image)
                 .addOnSuccessListener(text -> {
                     String recognizedText = text.getText();
 
-                    if (!recognizedText.isEmpty()) {
+                    // If default recognizer found substantial text, proceed
+                    if (recognizedText.trim().length() > 10) {
+                        Log.d("TextRecognition", "Success with default recognizer: " + recognizedText.substring(0, Math.min(50, recognizedText.length())));
                         finishTextRecognition(recognizedText);
                     } else {
-                        Toast.makeText(this, "No text detected in the image.", Toast.LENGTH_SHORT).show();
+                        // If not much text found, try with other recognizers in sequence
+                        Log.d("TextRecognition", "Default recognizer found little or no text. Trying specialized recognizers...");
+                        trySpecializedRecognizers(image);
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("TextRecognition", "Failed to recognize text: " + e.getMessage());
-                    Toast.makeText(this, "Failed to recognize text.", Toast.LENGTH_SHORT).show();
+                    Log.e("TextRecognition", "Default recognizer failed: " + e.getMessage());
+                    trySpecializedRecognizers(image);
                 });
     }
+
+
+    // New method to try different language recognizers
+    private void trySpecializedRecognizers(InputImage image) {
+        // List of recognizers to try (excluding the default "latin" one we already tried)
+        List<String> recognizerKeys = new ArrayList<>(textRecognizers.keySet());
+        recognizerKeys.remove("latin");
+
+        // Try each recognizer and collect results
+        Map<String, String> allResults = new HashMap<>();
+        final int[] completedRecognizers = {0};
+
+        for (String key : recognizerKeys) {
+            TextRecognizer recognizer = textRecognizers.get(key);
+
+            recognizer.process(image)
+                    .addOnSuccessListener(text -> {
+                        String result = text.getText().trim();
+                        if (!result.isEmpty()) {
+                            allResults.put(key, result);
+                        }
+
+                        completedRecognizers[0]++;
+                        if (completedRecognizers[0] >= recognizerKeys.size()) {
+                            // All recognizers have completed their work
+                            processCombinedResults(allResults);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("TextRecognition", key + " recognizer failed: " + e.getMessage());
+                        completedRecognizers[0]++;
+                        if (completedRecognizers[0] >= recognizerKeys.size()) {
+                            // All recognizers have completed their work
+                            processCombinedResults(allResults);
+                        }
+                    });
+        }
+    }
+
+    // Process all collected results
+    private void processCombinedResults(Map<String, String> allResults) {
+        if (allResults.isEmpty()) {
+            // No recognizer found any text
+            Toast.makeText(this, "Could not recognize text. Try with clearer image or different angle.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Find the result with the most content (assuming more text = better recognition)
+        String bestResult = "";
+        int maxLength = 0;
+        String bestRecognizer = "";
+
+        for (Map.Entry<String, String> entry : allResults.entrySet()) {
+            if (entry.getValue().length() > maxLength) {
+                maxLength = entry.getValue().length();
+                bestResult = entry.getValue();
+                bestRecognizer = entry.getKey();
+            }
+        }
+
+        Log.d("TextRecognition", "Best result from " + bestRecognizer + " recognizer");
+        finishTextRecognition(bestResult);
+    }
+
 
 
     private void finishTextRecognition(String recognizedText) {
