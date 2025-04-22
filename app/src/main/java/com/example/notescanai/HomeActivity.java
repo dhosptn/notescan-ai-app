@@ -72,6 +72,7 @@ public class HomeActivity extends AppCompatActivity {
     private RecyclerView notesRecyclerView;
     private FloatingActionButton cameraFab;
     private View deleteButton;
+    private View pinButton;
     private View UsreIcon;
     private NoteAdapter noteAdapter;
     private List<Note> notesList;
@@ -103,9 +104,11 @@ public class HomeActivity extends AppCompatActivity {
         notesRecyclerView = findViewById(R.id.notesRecyclerView);
         cameraFab = findViewById(R.id.cameraFab);
         deleteButton = findViewById(R.id.deleteButton);
+        pinButton = findViewById(R.id.pinButton);
 
-        // Sembunyikan deleteButton di awal
+        // Sembunyikan deleteButton dan pinButton di awal
         deleteButton.setVisibility(View.GONE);
+        pinButton.setVisibility(View.GONE);
 
         // Handle click delete button
         deleteButton.setOnClickListener(new View.OnClickListener() {
@@ -115,15 +118,20 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
+        // Handle click pin button
+        pinButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                pinSelectedNotes();
+            }
+        });
+
         // Initialize UsreIcon view
         UsreIcon = findViewById(R.id.UsreIcon);
 
         UsreIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("DEBUG", "UserIcon diklik!");
-                Toast.makeText(HomeActivity.this, "Klik berhasil", Toast.LENGTH_SHORT).show();
-
                 Intent intent = new Intent(HomeActivity.this, ProfileUploadActivity.class);
                 startActivity(intent);
             }
@@ -131,17 +139,20 @@ public class HomeActivity extends AppCompatActivity {
 
         // Initialize notes list and adapter
         notesList = new ArrayList<>();
+        // Initialize notes list and adapter
+        notesList = new ArrayList<>();
         noteAdapter = new NoteAdapter(this, notesList, new NoteAdapter.OnSelectionChangedListener() {
             @Override
             public void onSelectionChanged(int count) {
                 if (count > 0) {
                     deleteButton.setVisibility(View.VISIBLE);
+                    pinButton.setVisibility(View.VISIBLE);
                 } else {
                     deleteButton.setVisibility(View.GONE);
+                    pinButton.setVisibility(View.GONE);
                 }
             }
-        });
-
+        }, getStoredDeviceId());  // Pass device ID to adapter
         // Set up RecyclerView
         notesRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         notesRecyclerView.setAdapter(noteAdapter);
@@ -179,6 +190,26 @@ public class HomeActivity extends AppCompatActivity {
             // If no image is saved, show default
             imageView.setImageResource(R.drawable.circle_user_solid);
         }
+    }
+
+    // Method to pin selected notes
+    private void pinSelectedNotes() {
+        List<Note> selectedNotes = noteAdapter.getSelectedNotes(); // Dapatkan catatan yang dipilih
+        if (selectedNotes.isEmpty()) return;
+
+        for (Note note : selectedNotes) {
+            // Update 'pinned' property ke true dan simpan ke Firebase
+            note.setPinned(true);
+            notesRef.child(note.getId()).setValue(note);
+        }
+
+        Toast.makeText(this, "Selected notes pinned", Toast.LENGTH_SHORT).show();
+        noteAdapter.clearSelection();
+        pinButton.setVisibility(View.GONE);
+        deleteButton.setVisibility(View.GONE);
+
+        // Reload notes to show pinned notes at the top
+        loadNotesFromFirebase();
     }
 
     // Method to show dialog for choosing image source
@@ -275,6 +306,7 @@ public class HomeActivity extends AppCompatActivity {
 
         Toast.makeText(this, "Selected notes deleted", Toast.LENGTH_SHORT).show();
         deleteButton.setVisibility(View.GONE); // Sembunyikan tombol delete setelah menghapus
+        pinButton.setVisibility(View.GONE); // Sembunyikan tombol pin setelah menghapus
     }
 
     private void loadNotesFromFirebase() {
@@ -285,13 +317,28 @@ public class HomeActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 notesList.clear();
+                List<Note> pinnedNotes = new ArrayList<>();
+                List<Note> unpinnedNotes = new ArrayList<>();
+
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     Note note = snapshot.getValue(Note.class);
-                    notesList.add(note);
+                    if (note != null) {
+                        // Pisahkan catatan yang di-pin dan tidak di-pin
+                        if (note.isPinned()) {
+                            pinnedNotes.add(note);
+                        } else {
+                            unpinnedNotes.add(note);
+                        }
+                    }
                 }
 
-                // Sort by timestamp in descending order (newest first)
-                Collections.reverse(notesList);
+                // Sort kedua list berdasarkan timestamp (terbaru dulu)
+                Collections.reverse(pinnedNotes);
+                Collections.reverse(unpinnedNotes);
+
+                // Gabungkan list dengan catatan yang di-pin di atas
+                notesList.addAll(pinnedNotes);
+                notesList.addAll(unpinnedNotes);
 
                 // Update the adapter
                 noteAdapter.notifyDataSetChanged();

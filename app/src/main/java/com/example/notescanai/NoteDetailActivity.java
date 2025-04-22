@@ -74,7 +74,11 @@ public class NoteDetailActivity extends AppCompatActivity {
         setupTextView();
 
         // Get note ID from intent
-        noteId = getIntent().getStringExtra("NOTE_ID");
+        String noteId = getIntent().getStringExtra("NOTE_ID");
+        if (noteId == null) {
+            finish(); // Tutup activity biar ga crash
+            return;
+        }
 
         if (noteId != null) {
             // Initialize Firebase reference with device ID
@@ -256,15 +260,58 @@ public class NoteDetailActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem pinItem = menu.findItem(R.id.pinButton);
+
+        if (pinItem != null && currentNote != null) {
+            if (currentNote.isPinned()) {
+                pinItem.setIcon(R.drawable.ic_pin); // Icon pin aktif
+                pinItem.setTitle("Unpin Note");
+            } else {
+                pinItem.setIcon(R.drawable.ic_pin_outline); // Icon pin tidak aktif
+                pinItem.setTitle("Pin Note");
+            }
+        }
+
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+
+    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
+        int id = item.getItemId();
+
+        if (id == android.R.id.home) {
             onBackPressed();
             return true;
-        } else if (item.getItemId() == R.id.action_export_pdf) {
+        } else if (id == R.id.action_export_pdf) {
             checkPermissionAndExportPdf();
             return true;
+        } else if (id == R.id.pinButton) { // <<< Tambahan baru
+            togglePinStatus(); // Toggle pin/unpin ketika tombol pin di menu diklik
+            return true;
         }
+
         return super.onOptionsItemSelected(item);
+    }
+    private void togglePinStatus() {
+        if (currentNote != null) {
+            boolean newPinStatus = !currentNote.isPinned();
+            currentNote.setPinned(newPinStatus);
+
+            // Update in Firebase
+            noteRef.child("pinned").setValue(newPinStatus)
+                    .addOnSuccessListener(aVoid -> {
+                        // Update menu icons
+                        invalidateOptionsMenu(); // <<< ini yang penting supaya menu refresh
+
+                        // Show message
+                        String message = newPinStatus ? "Note pinned" : "Note unpinned";
+                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this, "Failed to update pin status", Toast.LENGTH_SHORT).show());
+        }
     }
 
     private void checkPermissionAndExportPdf() {

@@ -135,6 +135,33 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp">
 
+        <!-- Pin Button -->
+        <LinearLayout
+            android:id="@+id/pinButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_pin" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pin"
+                android:textSize="12sp"
+                android:textColor="#333333"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/poppins_regular" />
+        </LinearLayout>
+
         <!-- Delete Button -->
         <LinearLayout
             android:id="@+id/deleteButton"

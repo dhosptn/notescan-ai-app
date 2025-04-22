@@ -11,17 +11,20 @@ public class Note implements Serializable {
     private String title;
     private String text;
     private long timestamp;
+    private boolean pinned;
 
     // Required empty constructor for Firebase
     public Note() {
+
+        this.pinned = false;
         // Default constructor required for Firebase
     }
 
     public Note(String id, String text, long timestamp) {
         this.id = id;
-        this.title = title;
         this.text = text;
         this.timestamp = timestamp;
+        this.pinned = false;
     }
 
     public String getId() {
@@ -47,6 +50,14 @@ public class Note implements Serializable {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
     }
 
     // Returns a shortened preview of the text

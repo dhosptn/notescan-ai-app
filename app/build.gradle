@@ -15,8 +15,8 @@ android {
         versionName "1.0"
         multiDexEnabled true
 
-
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        // FIX: pakai AndroidX test runner
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -24,10 +24,20 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+        debug {
+            // CUSTOM APK NAME
+            applicationVariants.all { variant ->
+                variant.outputs.all { output ->
+                    outputFileName = "notescanai-${variant.buildType.name}.apk"
+                }
+            }
+        }
     }
 
     packagingOptions {
-        exclude 'META-INF/proguard/androidx-annotations.pro'
+        resources {
+            excludes += ['META-INF/proguard/androidx-annotations.pro']
+        }
     }
 
     compileOptions {
@@ -37,10 +47,9 @@ android {
 }
 
 dependencies {
-
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.core:core:1.9.0'
-    implementation 'com.android.support.constraint:constraint-layout:2.0.4'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4' // FIX: pakai androidx constraint-layout
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'de.hdodenhof:circleimageview:3.1.0'
     implementation 'com.google.android.material:material:1.5.0'
@@ -58,24 +67,13 @@ dependencies {
     implementation 'com.google.mlkit:text-recognition-chinese:16.0.1'
     implementation 'com.google.mlkit:text-recognition-japanese:16.0.1'
     implementation 'com.google.mlkit:text-recognition-korean:16.0.1'
-    // Devanagari text recognition (for Hindi and other Indian languages)
     implementation 'com.google.mlkit:text-recognition-devanagari:16.0.0'
 
-// Scripts with different writing styles (including cursive)
-    implementation 'com.google.mlkit:text-recognition-chinese:16.0.0'
-
-    // Glide for image loading
-    implementation 'com.github.bumptech.glide:glide:4.15.1'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
+    // Glide for image loading (pakai versi terbaru aja)
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-
-    implementation 'com.github.bumptech.glide:glide:4.15.1'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
-
-    implementation 'com.github.bumptech.glide:glide:4.16.0'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
-
 }
