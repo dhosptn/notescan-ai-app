@@ -73,6 +73,10 @@ Proyek ini dibuat untuk keperluan **edukasi** dan **tidak digunakan untuk tujuan
 
 ---
 
+## StoryBoard
+![alt text](image/StoryBoard.png)
+---
+
 ## 🙏 Ucapan Terima Kasih
 
 Kami mengucapkan terima kasih kepada **dosen pengampu** dan seluruh pihak yang telah mendukung proses pengembangan aplikasi **NoteScan AI**.
