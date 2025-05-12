@@ -61,7 +61,7 @@
 | Nama Anggota | NIM        | Peran                 |
 | ------------ | ---------- | --------------------- |
 | Muhammad Faiz Iqbal       | 312310491 | UI/UX & Layout        |
-| Ahmad Ridho Septian       | 312310447 | Machine Learning Develepor         |
+| Ahmad Ridho Septian       | 312310447 | Machine Learning Developer         |
 | Raditra Ikhwanul Arifin       | 312310487 | UI/UX & Module Contributor       |
 | Muhammmad Nurul Firdaus       | 312310495 | Problem Solver |
 
